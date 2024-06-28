@@ -30,24 +30,32 @@
         <p id="message">Processing your authentication...</p>
     </div>
     <script>
-        const fragment = new URLSearchParams(window.location.hash.slice(1));
-        const [accessToken, tokenType] = [fragment.get('access_token'), fragment.get('token_type')];
+        // Extract the code from the URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        console.log("Received code:", code);
 
-        if (accessToken) {
-            fetch('https://discord.com/api/users/@me', {
+        if (code) {
+            // Send the code to the backend for token exchange
+            fetch('https://your-backend-url/callback', {
+                method: 'POST',
                 headers: {
-                    authorization: `${tokenType} ${accessToken}`,
+                    'Content-Type': 'application/json',
                 },
+                body: JSON.stringify({ code }),
             })
-                .then(result => result.json())
-                .then(response => {
-                    const { username, discriminator } = response;
-                    document.getElementById('message').textContent = `Logged in as ${username}#${discriminator}`;
-                    
-                    // ここでWebhookを使用してトークン情報を送信できます
-                    // ただし、クライアントサイドで行うのはセキュリティ上推奨されません
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        document.getElementById('message').textContent = data.message;
+                    } else {
+                        document.getElementById('message').textContent = 'Authentication failed!';
+                    }
                 })
-                .catch(console.error);
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('message').textContent = 'An error occurred during authentication.';
+                });
         } else {
             document.getElementById('message').textContent = 'Authentication failed!';
         }
